@@ -6,7 +6,7 @@ const int echoPin=3;
 const int Buzzer=8;
 const int led=11;
 
-const int Range=25;
+const int Range=30;
 
 Servo radarServo;
 Servo pointerServo;
@@ -18,33 +18,38 @@ void radarScan(int angle);
 void setup(){
     radarServo.attach(9);
     pointerServo.attach(10);
-    digital.Write(trigPin,OUTPUT);
-    digital.Write(echoPin,INPUT);
+    pinMode(trigPin,OUTPUT);
+    pinMode(echoPin,INPUT);
 
-    digital.Write(Buzzer,OUTPUT);
-    digital.Write(led,OUTPUT);
+    pinMode(Buzzer,OUTPUT);
+    pinMode(led,OUTPUT);
 
-    radarServo.Write(0);
+    radarServo.write(0);
     pointerServo.write(0);
+
     Serial.begin(9600);
 }
 void loop(){
+
+
 for(int i=10;i<=170;i++){
     radarScan(i);
-    
+    digitalWrite(led,LOW);
+    noTone(Buzzer);
 }
 for(int i=170;i>=10;i--){
     radarScan(i);
-    
+    digitalWrite(led,LOW);
+    noTone(Buzzer);
 }
 
 }
 int calDistance(){
-digital.Write(trigPin,LOW);
-delayMicrosecond(2);
-digital.Write(trigPin,HIGH);
-delayMicrosecond(10);
-digital.Write(trigPin,LOW);
+digitalWrite(trigPin,LOW);
+delayMicroseconds(2);
+digitalWrite(trigPin,HIGH);
+delayMicroseconds(10);
+digitalWrite(trigPin,LOW);
 duration=pulseIn(echoPin,HIGH);
 
 distance=duration*0.034/2;
@@ -53,19 +58,19 @@ return distance;
 void radarScan(int angle){
     radarServo.write(angle);
     int dist=calDistance();
-
+    
     Serial.print("distance :");
     Serial.println(dist);
 
     while(dist>=0 && dist<=Range){
         radarServo.write(angle);
-        digital.Write(led,HIGH);
+        digitalWrite(led,HIGH);
         tone(Buzzer,1000);
-        delay(10);
+        delay(20);
         tone(Buzzer,800);
-        delay(10);
-        tone(Buzzer,600);
-        pointerServo.Write(angle);
+        dist = calDistance();
+        
+        pointerServo.write(angle);
     }
     delay(15);
 }
