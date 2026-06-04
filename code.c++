@@ -14,6 +14,7 @@ long duration;
 int distance;
 
 int calDistance();
+void radarScan(int angle);
 void setup(){
     radarServo.attach(9);
     pointerServo.attach(10);
@@ -25,11 +26,17 @@ void setup(){
 
     radarServo.Write(0);
     pointerServo.write(0);
-
+    Serial.begin(9600);
 }
 void loop(){
-
-
+for(int i=10;i<=170;i++){
+    radarScan(i);
+    
+}
+for(int i=170;i>=10;i--){
+    radarScan(i);
+    
+}
 
 }
 int calDistance(){
@@ -42,4 +49,23 @@ duration=pulseIn(echoPin,HIGH);
 
 distance=duration*0.034/2;
 return distance;
+}
+void radarScan(int angle){
+    radarServo.write(angle);
+    int dist=calDistance();
+
+    Serial.print("distance :");
+    Serial.println(dist);
+
+    while(dist>=0 && dist<=Range){
+        radarServo.write(angle);
+        digital.Write(led,HIGH);
+        tone(Buzzer,1000);
+        delay(10);
+        tone(Buzzer,800);
+        delay(10);
+        tone(Buzzer,600);
+        pointerServo.Write(angle);
+    }
+    delay(15);
 }
