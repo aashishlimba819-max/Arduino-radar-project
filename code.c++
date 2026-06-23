@@ -1,76 +1,125 @@
-#include<Arduino.h>
-#include<Servo.h>
+#include <Arduino.h>
+#include <Servo.h>
 
-const int trigPin=2;
-const int echoPin=3;
-const int Buzzer=8;
-const int led=11;
+const int trigPin = 2;
+const int echoPin = 3;
+const int buzzer = 8;
+const int led = 11;
 
-const int Range=30;
+const int Range = 25;
 
 Servo radarServo;
 Servo pointerServo;
-long duration;
-int distance;
 
-int calDistance();
-void radarScan(int angle);
-void setup(){
-    radarServo.attach(9);
-    pointerServo.attach(10);
-    pinMode(trigPin,OUTPUT);
-    pinMode(echoPin,INPUT);
+bool objectAlreadyDetected = false;
 
-    pinMode(Buzzer,OUTPUT);
-    pinMode(led,OUTPUT);
+int getDistance() {
 
-    radarServo.write(0);
-    pointerServo.write(0);
+    digitalWrite(trigPin, LOW);
+    delayMicroseconds(2);
+
+    digitalWrite(trigPin, HIGH);
+    delayMicroseconds(10);
+
+    digitalWrite(trigPin, LOW);
+
+    long duration = pulseIn(echoPin, HIGH, 30000);
+
+    if (duration == 0)
+        return 0;
+
+    return duration * 0.0343 / 2.0;
+}
+
+void handleDetection() {
+
+    digitalWrite(led, HIGH);
+    tone(buzzer, 1000);
+
+    if (!objectAlreadyDetected) {
+
+        pointerServo.write(90);
+        delay(2000);
+        pointerServo.write(150);
+
+        objectAlreadyDetected = true;
+    }
+
+    while (true) {
+
+        int dist = getDistance();
+
+        Serial.print("Distance: ");
+        Serial.println(dist);
+
+        if (dist == 0 || dist > Range) {
+
+            objectAlreadyDetected = false;
+
+            digitalWrite(led, LOW);
+            noTone(buzzer);
+
+            break;
+        }
+
+        delay(100);
+    }
+}
+
+void setup() {
 
     Serial.begin(9600);
-}
-void loop(){
 
+    pinMode(trigPin, OUTPUT);
+    pinMode(echoPin, INPUT);
 
-for(int i=10;i<=170;i++){
-    radarScan(i);
-    digitalWrite(led,LOW);
-    noTone(Buzzer);
-}
-for(int i=170;i>=10;i--){
-    radarScan(i);
-    digitalWrite(led,LOW);
-    noTone(Buzzer);
+    pinMode(buzzer, OUTPUT);
+    pinMode(led, OUTPUT);
+
+    radarServo.attach(9);
+    pointerServo.attach(10);
+
+    radarServo.write(10);
+    pointerServo.write(150);
 }
 
-}
-int calDistance(){
-digitalWrite(trigPin,LOW);
-delayMicroseconds(2);
-digitalWrite(trigPin,HIGH);
-delayMicroseconds(10);
-digitalWrite(trigPin,LOW);
-duration=pulseIn(echoPin,HIGH);
+void loop() {
 
-distance=duration*0.034/2;
-return distance;
-}
-void radarScan(int angle){
-    radarServo.write(angle);
-    int dist=calDistance();
-    
-    Serial.print("distance :");
-    Serial.println(dist);
+    for (int angle = 10; angle <= 170; angle++) {
 
-    while(dist>=0 && dist<=Range){
         radarServo.write(angle);
-        digitalWrite(led,HIGH);
-        tone(Buzzer,1000);
         delay(20);
-        tone(Buzzer,800);
-        dist = calDistance();
-        
-        pointerServo.write(angle);
+
+        int dist = getDistance();
+
+        Serial.print("Distance: ");
+        Serial.println(dist);
+
+        if (dist > 0 && dist <= Range) {
+
+            // Radar stops at current angle
+            radarServo.write(angle);
+
+            handleDetection();
+        }
     }
-    delay(15);
+
+    for (int angle = 170; angle >= 10; angle--) {
+
+        radarServo.write(angle);
+        delay(20);
+
+        int dist = getDistance();
+
+        Serial.print("Distance: ");
+        Serial.println(dist);
+
+        if (dist > 0 && dist <= Range) {
+
+            // Radar stops at current angle
+            radarServo.write(angle);
+
+            handleDetection();
+        }
+    }
 }
